@@ -1,4 +1,4 @@
-HARYANA SMART TRANSIT v11 — MANSI BALHARA
+HARYANA SMART TRANSIT — MANSI BALHARA
 
 Run:
 1. Put all files in one folder.
@@ -23,7 +23,7 @@ IMPORTANT:
 Actual official Haryana Roadways live bus positions are NOT exposed by a public API that was verified for this build. Therefore bus markers are explicitly demo/simulated. Do not present them as government live GPS. A production deployment needs an authorized GPS/API feed or your own driver-device backend.
 
 
-NEW V11.1 FEATURE — BUSES NEAR ME
+NEW  FEATURE — BUSES NEAR ME
 - Uses browser/device geolocation.
 - User can choose a 2/5/10/25/50 km radius.
 - Calculates distance from the user to available bus positions.
