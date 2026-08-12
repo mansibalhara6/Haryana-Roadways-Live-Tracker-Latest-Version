@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#087a46">
+<link rel="manifest" href="manifest.json">
+<title>Haryana Smart Transit — Mansi Balhara</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f4f7f5;color:#18352a}
+header{background:#073c28;color:white;padding:12px 3%;display:flex;align-items:center;justify-content:space-between;gap:15px;position:sticky;top:0;z-index:1000}.brand{font-weight:800;font-size:20px}.brand small{display:block;font-size:10px;opacity:.75}
+nav{display:flex;gap:5px;flex-wrap:wrap}nav button{border:0;border-radius:8px;padding:9px 11px;background:#ffffff18;color:white;cursor:pointer;font-weight:700}nav button.active,nav button:hover{background:#fff;color:#087a46}
+main{max-width:1450px;margin:auto;padding:20px 3% 50px}.page{display:none}.page.active{display:block}.card{background:#fff;border:1px solid #dfe9e3;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 5px 18px #153b2b0c}
+.hero{background:linear-gradient(120deg,#073c28,#0a9255);color:#fff}.hero h1{font-size:clamp(28px,4vw,48px);margin:5px 0}.hero p{max-width:800px;color:#dff3e8}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{background:#f7faf8;border:1px solid #e1eae5;border-radius:12px;padding:14px}.stat b{display:block;font-size:24px;margin-top:4px}.green{color:#087a46}.red{color:#bd2525}.orange{color:#b96b00}.muted{color:#667a71}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:145px}input,select{width:100%;padding:12px;border:1px solid #cbd8d1;border-radius:9px;background:#fff;font-size:15px}.btn{border:0;border-radius:9px;padding:11px 14px;cursor:pointer;font-weight:800}.primary{background:#087a46;color:#fff}.secondary{background:#eaf4ef;color:#087a46}.danger{background:#c62828;color:#fff}.notice{background:#eef8f2;border-left:4px solid #087a46;padding:12px;border-radius:8px}.warn{background:#fff6e5;border-left:4px solid #d88a00;padding:12px;border-radius:8px}
+#map{height:620px;border-radius:14px;border:1px solid #cddbd4;z-index:1}.maptools{position:absolute;z-index:500;margin:12px;display:flex;gap:7px;flex-wrap:wrap}.maptools button{background:white;border:1px solid #ccd9d3;border-radius:8px;padding:9px;box-shadow:0 2px 8px #0002;cursor:pointer;font-weight:700}
+.busgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.bus{background:#fff;border:1px solid #dde8e1;border-radius:13px;padding:14px}.status{padding:4px 8px;border-radius:99px;background:#e8f7ee;color:#087a46;font-size:12px;font-weight:800}.delay{background:#fff2d8;color:#9b5d00}.stop{background:#fdeaea;color:#ad2222}
+.result{border:1px solid #dce7e1;border-radius:12px;padding:14px;margin-top:10px}.chip{display:inline-block;background:#eef6f1;color:#087a46;padding:7px 10px;border-radius:99px;margin:3px;cursor:pointer}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5ece8;text-align:left}.tablewrap{overflow:auto;border:1px solid #dfe8e3;border-radius:12px}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:2000;align-items:center;justify-content:center}.modal.show{display:flex}.modalbox{width:min(450px,92%);background:white;padding:24px;border-radius:16px}.close{float:right;border:0;background:none;font-size:25px;cursor:pointer}.toast{display:none;position:fixed;right:18px;bottom:18px;background:#12382a;color:white;padding:13px 16px;border-radius:10px;z-index:3000}.toast.show{display:block}
+@media(max-width:950px){.grid{grid-template-columns:1fr 1fr}.grid3,.busgrid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.grid,.grid3,.busgrid{grid-template-columns:1fr}header{position:static}#map{height:520px}}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">🚌 Haryana Smart Transit<small>Developed by Mansi Balhara • Daily-use transport platform</small></div>
+<nav>
+<button class="active" onclick="page('home',this)">Home</button>
+<button onclick="page('journey',this)">Journey</button>
+<button onclick="page('mapPage',this);setTimeout(()=>map.invalidateSize(),100)">Live Map</button>
+<button onclick="page('timetable',this)">Timetable</button>
+<button onclick="page('stops',this)">Bus Stands</button>
+<button onclick="page('saved',this)">Saved</button>
+<button onclick="page('driver',this)">Driver</button>
+<button onclick="page('admin',this)">Admin</button>
+<button onclick="openLogin()">Login</button>
+</nav>
+</header>
+<main>
+<section id="home" class="page active">
+<div class="card hero"><h1>Your daily bus companion.</h1><p>Plan a journey, see a real interactive map, find nearby bus stands, open the official Haryana Roadways timetable, save routes and use role-based driver/admin tools.</p><div class="row"><button class="btn" style="background:white;color:#087a46" onclick="page('journey')">🧭 Plan Journey</button><button class="btn secondary" onclick="page('mapPage');setTimeout(()=>map.invalidateSize(),100)">📍 Open Map</button><button class="btn secondary" onclick="findNearbyBuses()">🚌 Buses Near Me</button><button class="btn secondary" onclick="useLocation()">📌 Use My Location</button></div></div>
+<div class="grid"><div class="stat">Cities<b>22</b></div><div class="stat">Demo buses<b id="busCount">12</b></div><div class="stat">Map<b class="green">OpenStreetMap</b></div><div class="stat">GPS<b class="green">Device-ready</b></div></div>
+<div class="card"><h2>Quick destinations</h2><div id="chips"></div></div>
+<div class="card"><h2>What makes this a real-world MVP?</h2><div class="grid3"><div><b>📍 Actual map tiles</b><p class="muted">Pan, zoom, markers and route lines use Leaflet + OpenStreetMap.</p></div><div><b>🧭 Real routing</b><p class="muted">Journey routes can be drawn using a public routing service when online.</p></div><div><b>📡 Device GPS</b><p class="muted">The driver module can request the phone/browser's GPS permission.</p></div></div></div>
+</section>
+
+<section id="journey" class="page">
+<div class="card"><h2>🧭 Journey Planner</h2><div class="row"><input id="from" list="cities" value="Rohtak" placeholder="From city"><input id="to" list="cities" value="Gurugram" placeholder="To city"><button class="btn primary" onclick="searchJourney()">Find Route</button></div><datalist id="cities"></datalist><div id="journeyResults"></div></div>
+<div class="card"><h2>Popular daily journeys</h2><div id="popular"></div></div>
+</section>
+
+<section id="mapPage" class="page">
+<div class="card"><h2>📍 Live Map</h2><div class="notice"><b>Map is real:</b> the base map, zooming, geolocation and route drawing are real. <b>Nearby bus results use the bus positions available to this prototype.</b> For official live proximity, connect an authorized live GPS feed.</div><br>
+<div style="position:relative"><div class="maptools"><button onclick="findNearbyBuses()">🚌 Nearby buses</button><button onclick="useLocation()">📌 My location</button><button onclick="showHaryana()">Haryana</button><button onclick="clearRoute()">Clear route</button></div><div id="map"></div></div>
+<div class="row" style="margin-top:12px"><select id="mapBus" onchange="focusBus(this.value)"></select><button class="btn primary" onclick="focusBus(document.getElementById('mapBus').value)">Focus Bus</button></div>
+<div id="mapInfo" class="result"></div>
+<div class="result">
+<h3 style="margin-top:0">🚌 Buses Near Me</h3>
+<div class="row">
+<select id="nearRadius"><option value="2">Within 2 km</option><option value="5" selected>Within 5 km</option><option value="10">Within 10 km</option><option value="25">Within 25 km</option><option value="50">Within 50 km</option></select>
+<button class="btn primary" onclick="findNearbyBuses()">Find Nearby Buses</button>
+</div>
+<div id="nearbyList" class="muted" style="margin-top:10px">Allow location access to find buses near your current position.</div>
+</div></div>
+</section>
+
+<section id="timetable" class="page">
+<div class="card"><h2>🕐 Official Haryana Roadways Timetable</h2><div class="notice">The official timetable portal remains the source of truth for current schedules.</div><br><iframe src="https://timetable.hrtransport.org/#/timetableinfo" style="width:100%;height:680px;border:1px solid #d8e4de;border-radius:12px"></iframe><br><br><button class="btn primary" onclick="window.open('https://timetable.hrtransport.org/#/timetableinfo','_blank')">Open official timetable ↗</button></div>
+</section>
+
+<section id="stops" class="page">
+<div class="card"><h2>🚏 Bus Stand Finder</h2><div class="row"><input id="stopSearch" placeholder="Search city / bus stand" oninput="renderStops()"><button class="btn primary" onclick="useLocation()">Find near me</button></div><div id="stopsList"></div></div>
+</section>
+
+<section id="saved" class="page"><div class="card"><h2>⭐ Saved routes & buses</h2><div id="savedList"></div></div></section>
+
+<section id="driver" class="page">
+<div class="card"><h2>👨‍✈️ Driver Mode</h2><div class="warn">Real device GPS requires the driver to grant location permission. This demo does not claim to transmit GPS to Haryana Roadways.</div><br>
+<div class="grid3"><div class="stat">Bus<b>HR-46-1021</b></div><div class="stat">Route<b>Rohtak → Gurugram</b></div><div class="stat">Status<b id="driverStatus" class="orange">READY</b></div></div><br>
+<div class="row"><button class="btn primary" onclick="startDriver()">Start GPS Trip</button><button class="btn danger" onclick="stopDriver()">Stop Trip</button><button class="btn danger" onclick="toast('SOS event recorded for admin demo')">🚨 SOS</button></div>
+<div id="gps" class="result">GPS is idle.</div></div>
+</section>
+
+<section id="admin" class="page">
+<div class="card"><h2>🛡️ Admin Control Center</h2><div class="grid"><div class="stat">Fleet<b>12</b></div><div class="stat">Running<b class="green" id="running">0</b></div><div class="stat">Alerts<b class="red" id="alerts">0</b></div><div class="stat">Saved Users<b id="savedUsers">0</b></div></div></div>
+<div class="card"><h2>Fleet</h2><div class="tablewrap"><table><thead><tr><th>Bus</th><th>Route</th><th>Speed</th><th>ETA</th><th>Status</th></tr></thead><tbody id="fleet"></tbody></table></div></div>
+</section>
+</main>
+
+<div id="login" class="modal"><div class="modalbox"><button class="close" onclick="closeLogin()">×</button><h2>🔐 Demo Login</h2><input id="email" placeholder="Email"><br><br><input id="pass" type="password" placeholder="Password"><br><br><select id="role"><option>Passenger</option><option>Driver</option><option>Admin</option></select><br><br><button class="btn primary" onclick="login()">Login</button><p id="loginMsg" class="muted"></p><small>Passenger: user@mansi.com / mansi123<br>Driver: driver@roadways.com / driver123<br>Admin: admin@roadways.com / admin123</small></div></div>
+<div id="toast" class="toast"></div>
+<footer style="text-align:center;padding:25px;color:#64756e">Haryana Smart Transit • Mansi Balhara • MCA Project</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const cities=["Ambala","Bhiwani","Charkhi Dadri","Faridabad","Fatehabad","Gurugram","Hisar","Jind","Kaithal","Karnal","Kurukshetra","Mahendragarh","Nuh","Palwal","Panchkula","Panipat","Rewari","Rohtak","Sirsa","Sonipat","Yamunanagar","Hansi"];
+const coords={Rohtak:[28.8955,76.6066],Gurugram:[28.4595,77.0266],Delhi:[28.6139,77.2090],Hisar:[29.1492,75.7217],Panipat:[29.3909,76.9635],Ambala:[30.3782,76.7767],Karnal:[29.6857,76.9905],Jind:[29.3158,76.3150],Sonipat:[28.9931,77.0151],Faridabad:[28.4089,77.3178],Rewari:[28.1928,76.6191],Kaithal:[29.8015,76.3996],Kurukshetra:[29.9695,76.8783],Yamunanagar:[30.1290,77.2674],Bhiwani:[28.7950,76.1340],Palwal:[28.1487,77.3320],Fatehabad:[29.5139,75.4541],Sirsa:[29.5349,75.0280],Nuh:[28.1026,77.0010],Panchkula:[30.6942,76.8606],Mahendragarh:[28.2769,76.1490],"Charkhi Dadri":[28.5921,76.2711],"Hansi":[29.1024,75.9631]};
+const stops=[["Ambala City","Ambala","0171-2556388"],["Bhiwani","Bhiwani","01664-242230"],["Charkhi Dadri","Charkhi Dadri","01250-220144"],["Faridabad","Faridabad","0129-2244953"],["Fatehabad","Fatehabad","01667-220617"],["Gurgaon","Gurugram","0124-2320222"],["Hisar","Hisar","01662-233285"],["Jind","Jind","01681-245370"],["Kaithal","Kaithal","01746-224214"],["Karnal Old Bus Stand","Karnal","0184-2251158"],["Kurukshetra","Kurukshetra","01744-220468"],["Panipat","Panipat","0180-2646544"],["Panchkula","Panchkula","0172-2562200"],["Rohtak","Rohtak","01262-276641"],["Rewari","Rewari","01274-256751"],["Sonipat","Sonipat","0130-2201101"],["Sirsa","Sirsa","01666-220866"],["Yamunanagar","Yamunanagar","01732-227717"],["Nuh","Nuh","01267-274714"],["Palwal","Palwal","01275-240285"]];
+let buses=[["HR-46-1021","Rohtak","Gurugram",46,14,"Active"],["HR-15-2045","Rohtak","Hisar",52,22,"Active"],["HR-39-7712","Gurugram","Faridabad",38,12,"Active"],["HR-05-2210","Hisar","Panipat",55,25,"Delayed"],["HR-68-4411","Ambala","Rohtak",43,31,"Active"],["HR-26-8820","Panipat","Karnal",40,10,"Active"],["HR-24-9130","Sonipat","Delhi",48,9,"Active"],["HR-20-5542","Rewari","Gurugram",45,19,"Active"],["HR-31-6604","Jind","Kaithal",42,21,"Active"],["HR-07-3309","Yamunanagar","Kurukshetra",35,28,"Stopped"],["HR-12-7788","Rohtak","Delhi",50,17,"Active"],["HR-14-3321","Delhi","Rohtak",39,33,"Delayed"]];
+let saved=JSON.parse(localStorage.getItem("hrt_saved")||"[]"),markers={},routeLayer=null,map=L.map("map").setView([29.1,76.8],8),driverWatch=null;
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
+function page(id,btn){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");if(id==="mapPage")setTimeout(()=>map.invalidateSize(),100);if(id==="saved")renderSaved();if(id==="stops")renderStops();if(id==="admin")renderAdmin()}
+function toast(x){let t=document.getElementById("toast");t.textContent=x;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2300)}
+
+let userLocationMarker=null,userAccuracyCircle=null,userPosition=null,nearbyLayer=L.layerGroup().addTo(map);
+
+function distanceKm(lat1,lon1,lat2,lon2){
+  const R=6371,rad=Math.PI/180;
+  const dLat=(lat2-lat1)*rad,dLon=(lon2-lon1)*rad;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function busCoordinates(b){
+  // In this demo, a bus is represented at its origin city.
+  // A production feed should replace this with the bus's current GPS coordinate.
+  return coords[b[1]]||null;
+}
+
+function showUserLocation(pos){
+  userPosition={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy};
+  const p=[userPosition.lat,userPosition.lng];
+  if(userLocationMarker) map.removeLayer(userLocationMarker);
+  if(userAccuracyCircle) map.removeLayer(userAccuracyCircle);
+  userLocationMarker=L.marker(p).addTo(map).bindPopup("📍 <b>You are here</b><br>Accuracy: "+Math.round(userPosition.accuracy)+" m");
+  userAccuracyCircle=L.circle(p,{radius:userPosition.accuracy,weight:1,fillOpacity:.08}).addTo(map);
+  map.setView(p,14);
+}
+
+function renderNearbyBuses(){
+  if(!userPosition){document.getElementById("nearbyList").innerHTML="<span class='muted'>Location not available. Tap Find Nearby Buses and allow location permission.</span>";return;}
+  const radius=Number(document.getElementById("nearRadius").value||5);
+  nearbyLayer.clearLayers();
+  const found=buses.map(b=>{
+    const c=busCoordinates(b);
+    if(!c)return null;
+    const d=distanceKm(userPosition.lat,userPosition.lng,c[0],c[1]);
+    return {b,d,c};
+  }).filter(x=>x&&x.d<=radius).sort((a,b)=>a.d-b.d);
+
+  if(!found.length){
+    document.getElementById("nearbyList").innerHTML=`<span class="muted">No bus with an available position was found within ${radius} km. Try a larger radius.</span>`;
+    return;
+  }
+
+  document.getElementById("nearbyList").innerHTML=found.map((x,i)=>{
+    const b=x.b;
+    return `<div class="result">
+      <div class="row">
+        <div><b>${i+1}. 🚌 ${b[0]}</b><br><span class="muted">${b[1]} → ${b[2]}</span></div>
+        <div><b>${x.d.toFixed(1)} km</b><br><span class="muted">from you</span></div>
+        <div><span class="status ${b[5]==="Delayed"?"delay":b[5]==="Stopped"?"stop":""}">${b[5]}</span><br><span class="muted">${b[3]} km/h • ETA ${b[4]} min</span></div>
+        <button class="btn primary" onclick="focusNearbyBus('${b[0]}',${x.c[0]},${x.c[1]})">View</button>
+        <button class="btn secondary" onclick="saveItem('${b[0]}')">⭐</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function focusNearbyBus(id,lat,lng){
+  map.setView([lat,lng],13);
+  if(markers[id]) markers[id].openPopup();
+}
+
+function findNearbyBuses(){
+  if(!navigator.geolocation){toast("This browser does not support GPS.");return;}
+  toast("Getting your location…");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    showUserLocation(pos);
+    renderNearbyBuses();
+    page("mapPage");
+    setTimeout(()=>map.invalidateSize(),100);
+  },err=>{
+    const msg=err.code===1?"Location permission denied. Please allow location access.":err.code===2?"Location unavailable.":"Location request timed out.";
+    toast(msg);
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
+}
+
+function useLocation(){if(!navigator.geolocation){toast("Geolocation not supported");return}navigator.geolocation.getCurrentPosition(p=>{showUserLocation(p);renderNearbyBuses();toast("Your location found")},()=>toast("Location permission denied"))}
+function showHaryana(){map.setView([29.1,76.8],8)}
+function clearRoute(){if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}toast("Route cleared")}
+function focusBus(id){let b=buses.find(x=>x[0]===id);if(!b)return;let c=coords[b[1]]||[29,76];map.setView(c,11);if(markers[id])markers[id].openPopup();document.getElementById("mapInfo").innerHTML="<b>🚌 "+b[0]+"</b><br>"+b[1]+" → "+b[2]+"<br>Speed: "+b[3]+" km/h • ETA: "+b[4]+" min • "+b[5]}
+async function drawRoute(a,b){if(!coords[a]||!coords[b])return;clearRoute();let A=coords[a],B=coords[b];let url=`https://router.project-osrm.org/route/v1/driving/${A[1]},${A[0]};${B[1]},${B[0]}?overview=full&geometries=geojson`;try{let r=await fetch(url);let j=await r.json();if(j.routes&&j.routes[0]){routeLayer=L.geoJSON(j.routes[0].geometry,{style:{color:"#087a46",weight:6,opacity:.85}}).addTo(map);map.fitBounds(routeLayer.getBounds(),{padding:[25,25]});toast("Real road route loaded")}}catch(e){routeLayer=L.polyline([A,B],{color:"#087a46",weight:5,dashArray:"8 8"}).addTo(map);map.fitBounds(routeLayer.getBounds(),{padding:[25,25]});toast("Routing service unavailable; showing direct line")}}
+function searchJourney(){let a=document.getElementById("from").value,b=document.getElementById("to").value;let matches=buses.filter(x=>(x[1].toLowerCase()===a.toLowerCase()&&x[2].toLowerCase()===b.toLowerCase())||(x[1].toLowerCase()===b.toLowerCase()&&x[2].toLowerCase()===a.toLowerCase()));document.getElementById("journeyResults").innerHTML=`<div class="result"><b>${a} → ${b}</b><br><span class="muted">Road route and demo fleet results</span><br><button class="btn primary" onclick="drawRoute('${a}','${b}')">🗺️ Show route on map</button></div>`+(matches.length?matches.map(x=>`<div class="result"><b>🚌 ${x[0]}</b> • ${x[1]} → ${x[2]} • ${x[3]} km/h • ETA ${x[4]} min • <span class="status ${x[5]==="Delayed"?"delay":x[5]==="Stopped"?"stop":""}">${x[5]}</span><button class="btn secondary" onclick="saveItem('${x[0]}')">⭐ Save</button></div>`).join(""):"<div class='result muted'>No currently simulated bus on this exact pair. Use the official timetable for scheduled services.</div>") ;}
+function saveItem(id){if(!saved.includes(id))saved.push(id);else saved=saved.filter(x=>x!==id);localStorage.setItem("hrt_saved",JSON.stringify(saved));renderSaved();toast(saved.includes(id)?"Saved":"Removed")}
+function renderSaved(){document.getElementById("savedList").innerHTML=saved.length?saved.map(id=>{let x=buses.find(b=>b[0]===id);return`<div class="result"><b>⭐ ${x[0]}</b> • ${x[1]} → ${x[2]} <button class="btn secondary" onclick="focusBus('${id}');page('mapPage');setTimeout(()=>map.invalidateSize(),100)">Map</button></div>`}).join(""):"<div class='muted'>No saved buses yet.</div>"}
+function renderStops(){let q=(document.getElementById("stopSearch").value||"").toLowerCase();document.getElementById("stopsList").innerHTML=stops.filter(s=>(s[0]+" "+s[1]).toLowerCase().includes(q)).map(s=>`<div class="result"><b>🚏 ${s[0]}</b><br>${s[1]} • <a href="tel:${s[2]}">${s[2]}</a></div>`).join("")||"<div class='muted'>No matching bus stand.</div>"}
+function renderAdmin(){document.getElementById("running").textContent=buses.filter(x=>x[5]==="Active").length;document.getElementById("savedUsers").textContent=saved.length;document.getElementById("fleet").innerHTML=buses.map(x=>`<tr><td>${x[0]}</td><td>${x[1]} → ${x[2]}</td><td>${x[3]} km/h</td><td>${x[4]} min</td><td><span class="status ${x[5]==="Delayed"?"delay":x[5]==="Stopped"?"stop":""}">${x[5]}</span></td></tr>`).join("")}
+function openLogin(){document.getElementById("login").classList.add("show")}function closeLogin(){document.getElementById("login").classList.remove("show")}
+function login(){let e=document.getElementById("email").value.toLowerCase(),p=document.getElementById("pass").value,r=document.getElementById("role").value.toLowerCase();let ok=(r==="passenger"&&e==="user@mansi.com"&&p==="mansi123")||(r==="driver"&&e==="driver@roadways.com"&&p==="driver123")||(r==="admin"&&e==="admin@roadways.com"&&p==="admin123");if(!ok){document.getElementById("loginMsg").textContent="Invalid demo credentials.";return}closeLogin();page(r==="driver"?"driver":r==="admin"?"admin":"home");toast("Logged in as "+r)}
+function startDriver(){if(!navigator.geolocation){toast("GPS unavailable");return}document.getElementById("driverStatus").textContent="TRACKING";driverWatch=navigator.geolocation.watchPosition(p=>{document.getElementById("gps").innerHTML=`📡 <b>GPS ACTIVE</b><br>Latitude: ${p.coords.latitude.toFixed(6)}<br>Longitude: ${p.coords.longitude.toFixed(6)}<br>Accuracy: ${Math.round(p.coords.accuracy)} m<br>Speed: ${p.coords.speed?Math.round(p.coords.speed*3.6)+" km/h":"N/A"}<br><small>Location is available to this browser; backend transmission is not enabled in this demo.</small>`;map.setView([p.coords.latitude,p.coords.longitude],14)},()=>toast("GPS permission denied"))}
+function stopDriver(){if(driverWatch!==null)navigator.geolocation.clearWatch(driverWatch);driverWatch=null;document.getElementById("driverStatus").textContent="STOPPED";toast("Driver GPS stopped")}
+cities.forEach(c=>{let o=document.createElement("option");o.value=c;document.getElementById("cities").appendChild(o)});
+document.getElementById("chips").innerHTML=["Rohtak → Gurugram","Rohtak → Delhi","Hisar → Panipat","Ambala → Rohtak"].map(x=>{let [a,b]=x.split(" → ");return`<span class="chip" onclick="document.getElementById('from').value='${a}';document.getElementById('to').value='${b}';page('journey');searchJourney()">${x}</span>`}).join("");
+document.getElementById("popular").innerHTML=["Rohtak → Gurugram","Rohtak → Delhi","Gurugram → Faridabad","Hisar → Panipat"].map(x=>`<span class="chip">${x}</span>`).join("");
+buses.forEach(b=>{let c=coords[b[1]]||[29,76];markers[b[0]]=L.marker(c).addTo(map).bindPopup(`<b>🚌 ${b[0]}</b><br>${b[1]} → ${b[2]}<br>${b[3]} km/h • ETA ${b[4]} min`)});
+document.getElementById("mapBus").innerHTML=buses.map(b=>`<option value="${b[0]}">${b[0]} • ${b[1]} → ${b[2]}</option>`).join("");
+renderStops();renderAdmin();
+setInterval(()=>{buses.forEach(b=>{if(b[5]==="Active"){b[3]=Math.max(25,Math.min(65,b[3]+(Math.random()>.5?1:-1)));b[4]=Math.max(5,b[4]+(Math.random()>.6?-1:1));let c=coords[b[1]];if(markers[b[0]]&&c){markers[b[0]].setPopupContent(`<b>🚌 ${b[0]}</b><br>${b[1]} → ${b[2]}<br>${b[3]} km/h • ETA ${b[4]} min`)}}});renderAdmin()},4000);
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body></html>
